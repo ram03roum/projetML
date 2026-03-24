@@ -15,19 +15,29 @@ Ce projet vise à analyser le comportement des clients d'un e-commerce de cadeau
 
 projetML/
 │
+
 ├── data/
+
 ├── notebooks/
+
 ├── src/
+
 ├── models/
+
 ├── reports/
+
 ├── app/
 
 ⚙️ Technologies utilisées 
 
 ▪ Python
+
 ▪ Pandas
+
 ▪ NumPy
+
 ▪ Scikit-learn
+
 ▪ Matplotlib / Seaborn
 
 📌 Étapes du projet
