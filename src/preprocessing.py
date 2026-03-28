@@ -531,7 +531,7 @@ def apply_smote(X_train, y_train, random_state=42):
 # ─────────────────────────────────────────
 # 11. Pipeline complète
 # ─────────────────────────────────────────
-def preprocess_pipeline(path, target_col='Churn'):
+def preprocess_pipeline(path, target_col='churn'):
 
     print("─" * 40)
     print("📥 Chargement...")

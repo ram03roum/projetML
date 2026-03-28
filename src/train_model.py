@@ -232,7 +232,7 @@ def run_kmeans(X, n_clusters=4):
     return kmeans
 
 
-def drop_monetary_leaks(df, target_col='MonetaryTotal'):
+def drop_monetary_leaks(df, target_col='monetarytotal'):
     derived = [col for col in df.columns if col != target_col and col.lower().startswith('monetary')]
     if derived:
         print(f"  Colonnes dérivées de {target_col} supprimées pour la régression : {derived}")
@@ -240,7 +240,7 @@ def drop_monetary_leaks(df, target_col='MonetaryTotal'):
     return df
 
 
-def load_regression_data(path, target_col='MonetaryTotal'):
+def load_regression_data(path, target_col='monetarytotal'):
     df = pd.read_csv(path)
     print(f"  Régression : shape initiale {df.shape}")
     df = drop_monetary_leaks(df, target_col=target_col)
@@ -248,7 +248,7 @@ def load_regression_data(path, target_col='MonetaryTotal'):
 
 
 X_train, X_test, y_train, y_test, X_train_smote, y_train_smote, scaler = preprocess_pipeline(
-    '../data/processed/step3_feature_engineering.csv'
+    'data/processed/step3_feature_engineering.csv'
 )
 
 # Vérifications pipeline
@@ -276,7 +276,7 @@ def evaluate_model(model, X_test, y_test):
     }
 
 
-def build_regression_dataset(path, target_col='MonetaryTotal'):
+def build_regression_dataset(path, target_col='monetarytotal'):
     df = load_regression_data(path, target_col)
     X = df.drop(columns=[target_col])
     y = df[target_col]
@@ -350,8 +350,8 @@ print(confusion_matrix(y_test, y_pred))
 # ─────────────────────────────────────────
 print("\n🔧 Lancement de la régression sur MonetaryTotal")
 X_reg_train, X_reg_test, y_reg_train, y_reg_test = build_regression_dataset(
-    '../data/processed/step3_feature_engineering.csv',
-    target_col='MonetaryTotal'
+    'data/processed/step3_feature_engineering.csv',
+    target_col='monetarytotal'
 )
 
 lr_reg = LinearRegression()
@@ -377,9 +377,9 @@ run_kmeans(X_train, n_clusters=4)
 
 # SAUVEGARDE DU MEILLEUR MODÈLE
 # Sauvegarder modèle
-joblib.dump(best_model, '../models/best_model.pkl')
+joblib.dump(best_model, 'models/best_model.pkl')
 
 # Sauvegarder scaler
-joblib.dump(scaler, '../models/scaler.pkl')
+joblib.dump(scaler, 'models/scaler.pkl')
 
 print("Modèle et scaler sauvegardés ✔")
