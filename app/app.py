@@ -8,11 +8,19 @@ app = Flask(__name__)
 model  = joblib.load("models/best_model.pkl")
 scaler = joblib.load("models/scaler.pkl")
 
-# ✅ Colonnes EXACTES du modèle (après get_dummies)
+# Load feature names from the training data
 X_train_ref   = pd.read_csv("data/train_test/X_train.csv")
 feature_names = X_train_ref.columns.tolist()
 
-print(f"✅ Modèle attend {len(feature_names)} features")
+print(f"[OK] Modele attend {len(feature_names)} features")
+
+# Get scaler's expected features
+if hasattr(scaler, 'feature_names_in_'):
+    scaler_features = scaler.feature_names_in_.tolist()
+    print(f"[OK] Scaler attend {len(scaler_features)} features numeriques")
+else:
+    scaler_features = None
+    print("[WARN] Scaler n'a pas de feature_names_in_")
 
 
 def get_float(form, key, default=0.0):
@@ -67,10 +75,21 @@ def predict():
         input_df = input_df.reindex(columns=feature_names, fill_value=0.0)
 
         # --- Scaling ---
-        try:
-            scaler_cols = [c for c in scaler.feature_names_in_ if c in input_df.columns]
-            input_df[scaler_cols] = scaler.transform(input_df[scaler_cols])
-        except AttributeError:
+        # Only scale the numeric columns that the scaler was trained on
+        if scaler_features is not None:
+            # Find which scaler features exist in our input
+            available_scaler_cols = [c for c in scaler_features if c in input_df.columns]
+            missing_scaler_cols = [c for c in scaler_features if c not in input_df.columns]
+
+            if missing_scaler_cols:
+                # Add missing columns with 0 (median/mean would be better but 0 is safe)
+                for col in missing_scaler_cols:
+                    input_df[col] = 0.0
+
+            # Now scale all the features the scaler expects
+            input_df[scaler_features] = scaler.transform(input_df[scaler_features])
+        else:
+            # Fallback: scale all numeric columns
             num_cols = input_df.select_dtypes(include=['float64', 'int64']).columns
             input_df[num_cols] = scaler.transform(input_df[num_cols])
 
