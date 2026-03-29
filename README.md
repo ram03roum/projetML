@@ -40,8 +40,6 @@ Le modèle de déploiement sacrifie de l'accuracy (67% vs 92%) pour gagner en:
 - ✅ **Valeur business**: Identifie 49% des churners en ne contactant que 41% des clients
 - ✅ **Fonctionnement correct**: Les prédictions répondent aux inputs utilisateur
 
-Cette approche démontre la compréhension des contraintes de production en ML.
-
 ---
 
 🗂️ Structure du projet
@@ -121,7 +119,7 @@ projetML/
 - **Data Cleaning**: Imputation des valeurs manquantes (médiane)
 - **Encodage**: Label Encoding (features ordinales) + One-Hot Encoding (nominales)
 - **Feature Engineering**: Création de MonetaryPerDay, AvgBasketValue, TenureRatio
-- **Suppression Data Leakage**: Retrait de 19 features (recency, tenureratio, churnriskcategory, etc.)
+- **Suppression Data Leakage**: Retrait de 19 features ( tenureratio, churnriskcategory,...)
 - **Normalisation**: StandardScaler sur features numériques
 
 ### 3. Transformation
@@ -144,47 +142,8 @@ projetML/
 
 📊 Résultats
 
-### Modèle de Recherche (103 features)
-
 ```
-Accuracy:  92.46%
-Precision: 0.9667 (96.67% des prédictions CHURN sont correctes)
-Recall:    0.8007 (80.07% des vrais churners sont détectés)
-F1-Score:  0.8759
-
-Confusion Matrix:
-[[576   8]   <- 576 vrais NO CHURN correctement prédits
- [ 58 233]]  <- 233 vrais CHURN correctement prédits
-```
-
-**Top 5 Features Importantes:**
-1. preferredmonth (18.49%)
-2. purchaseintensity (6.13%)
-3. favoriteseason_Printemps (5.39%)
-4. monetarytotal (4.37%)
-5. uniqueinvoices (4.32%)
-
-### Modèle de Déploiement (5 features)
-
-```
-Accuracy:  67.22%
-Precision: 0.5603 (56% des prédictions CHURN sont correctes)
-Recall:    0.4948 (49% des vrais churners sont détectés)
-F1-Score:  0.5255
-
-Confusion Matrix:
-[[471 113]   <- 471 vrais NO CHURN correctement prédits
- [147 144]]  <- 144 vrais CHURN correctement prédits
-```
-
-**Impact Business:**
-- Sur 1000 clients (330 churners):
-  - Sans modèle: Contacter 1000 clients
-  - Avec modèle: Contacter 410 clients (59% économie)
-  - Résultat: Sauver 112 clients avec campagnes ciblées
-
----
-
+prédiction correcte des clients 
 ---
 
 ▶️ Installation
@@ -205,10 +164,6 @@ python -m venv venv
 # Activer (Windows)
 venv\Scripts\activate
 
-# Activer (Linux/Mac)
-source venv/bin/activate
-```
-
 ### 3. Installer les dépendances
 
 ```bash
@@ -224,35 +179,10 @@ pip install -r requirements.txt
 **⚠️ IMPORTANT: Utiliser le modèle simple pour le déploiement**
 
 ```bash
-# RECOMMANDÉ: Modèle simple (5 features, fonctionne correctement)
 python app/app_simple.py
 ```
 
 Puis ouvrir le navigateur à: **http://localhost:5000**
-
-**Exemples de tests:**
-
-**Client à Haut Risque (devrait prédire CHURN):**
-```
-Age: 49
-Frequency: 1
-Monetary Total: 300
-Total Transactions: 20
-Weekend Ratio: 0.3
-
-Résultat attendu: CHURN (50-60% probabilité)
-```
-
-**Client Fidèle (devrait prédire NO CHURN):**
-```
-Age: 45
-Frequency: 30
-Monetary Total: 5000
-Total Transactions: 100
-Weekend Ratio: 0.3
-
-Résultat attendu: NO CHURN (1-5% probabilité)
-```
 
 ### Option 2: Entraîner les Modèles
 
@@ -275,36 +205,15 @@ jupyter notebook
 # Ouvrir notebooks/exploration.ipynb
 ```
 
-📊 Résultats
-
 ...
-
----
 
 ## 🎯 Points Clés du Projet
 
-### 1. Détection et Suppression du Data Leakage (CRITIQUE!)
-
-**Problème identifié:** 19 features avaient une corrélation > 0.85 avec la target (churn):
-- Features temporelles: `recency`, `tenureratio`, `monetaryperday`, `firstpurchasedaysago`
-- Features catégorielles: `churnriskcategory`, `loyaltylevel`, `rfmsegment`
+### 1. Détection et Suppression du Data Leakage 
 
 **Impact:** Sans suppression → 100% accuracy (fuite de données)
 **Après suppression:** 92.46% accuracy (réaliste)
 
-### 2. Stratégie Dual-Model
-
-**Innovation:** Séparation recherche / déploiement
-- Modèle recherche: Démonstration capacités ML (92.46%)
-- Modèle déploiement: Application pratique (67.22%)
-
-**Justification académique:**
-> "Le modèle de recherche atteint 92.46% d'accuracy mais nécessite 103 features
-> impossibles à collecter via formulaire web. Suivant les best practices industrielles,
-> nous avons développé un modèle de déploiement simplifié (5 features) atteignant
-> 67.22% d'accuracy, aligné avec les standards industrie (60-75% pour modèles simples
-> de churn e-commerce). Cette approche démontre la compréhension des contraintes
-> de production ML: équilibre entre performance modèle et expérience utilisateur."
 
 ### 3. Pipeline ML Complet
 
@@ -318,75 +227,7 @@ jupyter notebook
 
 ---
 
-## ⚠️ Problèmes Courants et Solutions
-
-### Problème 1: "Flask donne toujours 14.7%"
-
-**Cause:** Vous utilisez `app.py` qui utilise le modèle complexe (103 features) avec seulement 5 inputs.
-
-**Solution:**
-```bash
-# Utiliser le modèle simple
-python app/app_simple.py
-```
-
-### Problème 2: "ModuleNotFoundError"
-
-**Solution:**
-```bash
-pip install -r requirements.txt
-```
-
-### Problème 3: "FileNotFoundError pour les modèles"
-
-**Solution:** Entraîner les modèles d'abord:
-```bash
-python src/train_model_v2.py
-python train_simple_model.py
-```
-
----
-
-## 📚 Contexte Académique
-
-Ce projet répond à tous les objectifs pédagogiques du workshop:
-
-| Objectif | Statut |
-|----------|--------|
-| **Exploration** - Analyser qualité données | ✅ Complet |
-| **Préparation** - Nettoyer, encoder, normaliser | ✅ Complet |
-| **Transformation** - Réduire dimension (ACP) | ✅ Complet |
-| **Modélisation** - Clustering, classification, régression | ✅ Complet |
-| **Évaluation** - Interpréter résultats | ✅ Complet |
-| **Déploiement** - Interface Flask | ✅ Complet |
-
----
-
 📌 Auteur
 
-**Projet réalisé dans le cadre du module Machine Learning - GI2**
-- Module: Atelier Machine Learning
-- Professeur: Fadoua Drira
-- Année: 2025-2026
+**Projet réalisé dans le cadre du module Machine Learning **
 
----
-
-## 🙏 Remerciements
-
-- Prof. Fadoua Drira pour les consignes du projet
-- Documentation scikit-learn
-- Communauté Stack Overflow
-
----
-
-**Dernière mise à jour:** Mars 2026
-**Statut:** ✅ Complet et Production-Ready
-
----
-
-## 🔗 Liens Rapides
-
-- **Lancer Flask:** `python app/app_simple.py`
-- **Entraîner modèles:** `python src/train_model_v2.py`
-- **Voir rapports:** Dossier `reports/`
-- **Documentation:** Ce README + commentaires code
