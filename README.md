@@ -1,9 +1,10 @@
-# Machine Learning Project
-🧠 Customer Behavior Analysis - E-commerce Churn Prediction
+# Projet Machine Learning
+
+🧠 Analyse du Comportement Client – Prédiction du Churn en E-commerce
 
 📕 Description
 
-Ce projet vise à analyser le comportement des clients d'un e-commerce de cadeaux afin de prédire le churn et améliorer les stratégies marketing.
+Ce projet vise à analyser le comportement des clients d'un e-commerce de cadeaux afin de prédire le churn (désabonnement ou perte de clients) et améliorer les stratégies marketing.
 
 **Caractéristique unique:** Ce projet implémente **deux modèles distincts** - un modèle de recherche (103 features, 92.46% accuracy) pour l'analyse approfondie et un modèle de déploiement (5 features, 67.22% accuracy) pour l'interface web Flask.
 
@@ -14,7 +15,7 @@ Ce projet vise à analyser le comportement des clients d'un e-commerce de cadeau
 ▪ Améliorer la prise de décision marketing
 ▪ Déployer un système de prédiction en temps réel via Flask
 
-## 🎓 Stratégie Dual-Model: Recherche vs Déploiement
+## 🎓 Stratégie à Double Modèle : Recherche vs Déploiement
 
 ### Pourquoi deux modèles?
 
@@ -159,14 +160,17 @@ cd projetML
 
 ```bash
 # Créer l'environnement
+
 python -m venv venv
 
 # Activer (Windows)
+
 venv\Scripts\activate
 
 ### 3. Installer les dépendances
 
 ```bash
+
 pip install -r requirements.txt
 ```
 
@@ -174,11 +178,12 @@ pip install -r requirements.txt
 
 🚀 Utilisation
 
-### Option 1: Interface Web Flask (RECOMMANDÉ)
+### Option 1: Interface Web Flask 
 
 **⚠️ IMPORTANT: Utiliser le modèle simple pour le déploiement**
 
 ```bash
+
 python app/app_simple.py
 ```
 

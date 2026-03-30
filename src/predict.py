@@ -1,6 +1,3 @@
-"""
-Script de prédiction pour utiliser le modèle entraîné.
-"""
 import joblib
 import pandas as pd
 import numpy as np

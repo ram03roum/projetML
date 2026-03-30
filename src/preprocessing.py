@@ -287,5 +287,3 @@ def preprocess_pipeline(path, target_col='churn'):
         y_train_resampled,
         scaler
     )
-
-

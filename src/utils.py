@@ -1,235 +1,261 @@
 """
-Fonctions utilitaires pour le projet ML Retail.
+utils.py — fonctions utilitaires réutilisables
+utilisé par : preprocessing.py, train_model.py, notebooks
 """
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import (
-    confusion_matrix,
-    classification_report,
-    roc_curve,
-    auc,
-    roc_auc_score
-)
 
 
-def plot_confusion_matrix(y_true, y_pred, labels=['No Churn', 'Churn'], save_path=None):
+# ─────────────────────────────────────────
+# 1. chargement des données
+# ─────────────────────────────────────────
+def load_data(path):
+    """charge un fichier csv et retourne un dataframe."""
+    df = pd.read_csv(path)
+    df.columns = df.columns.str.lower().str.strip()
+    print(f"  données chargées : {df.shape[0]} lignes, {df.shape[1]} colonnes")
+    return df
+
+
+# ─────────────────────────────────────────
+# 2. diagnostic rapide
+# ─────────────────────────────────────────
+def diagnostic(df):
+    """affiche un diagnostic rapide du dataset."""
+    print("=" * 50)
+    print(f"shape          : {df.shape}")
+    print(f"nan totaux     : {df.isnull().sum().sum()}")
+    print(f"doublons       : {df.duplicated().sum()}")
+    print("=" * 50)
+
+    missing = df.isnull().sum()
+    missing = missing[missing > 0].sort_values(ascending=False)
+    if len(missing) > 0:
+        print("\ncolonnes avec nan :")
+        for col, n in missing.items():
+            print(f"  {col}: {n} ({n/len(df)*100:.1f}%)")
+    else:
+        print("aucune valeur manquante ✅")
+
+    return missing
+
+
+# ─────────────────────────────────────────
+# 3. heatmap de corrélation
+# ─────────────────────────────────────────
+def plot_correlation_heatmap(df, target=None, threshold=0.8,
+                              figsize=(14, 10), save_path=None):
     """
-    Affiche la matrice de confusion.
-
-    Args:
-        y_true: Vraies valeurs
-        y_pred: Prédictions
-        labels: Labels des classes
-        save_path: Chemin pour sauvegarder la figure (optionnel)
+    affiche la heatmap de corrélation.
+    si target est fourni, affiche aussi la corrélation avec la target.
     """
-    cm = confusion_matrix(y_true, y_pred)
+    num_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+    corr = df[num_cols].corr()
 
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                xticklabels=labels, yticklabels=labels)
-    plt.title('Matrice de Confusion')
-    plt.ylabel('Vraie Classe')
-    plt.xlabel('Classe Prédite')
+    plt.figure(figsize=figsize)
+    mask = np.triu(np.ones_like(corr, dtype=bool))
+    sns.heatmap(corr, mask=mask, annot=False, cmap='coolwarm',
+                center=0, square=True, linewidths=0.5)
+    plt.title("heatmap de corrélation")
+    plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, bbox_inches='tight', dpi=300)
-        print(f"✅ Matrice de confusion sauvegardée : {save_path}")
-
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        print(f"  heatmap sauvegardée : {save_path}")
     plt.show()
 
+    # corrélation avec la target si fournie
+    if target and target in df.columns:
+        corr_target = df[num_cols].corr()[target].abs().sort_values(ascending=False)
+        print(f"\ntop 10 features corrélées avec '{target}' :")
+        print(corr_target.head(11))
 
-def plot_roc_curve(y_true, y_proba, save_path=None):
+    return corr
+
+
+# ─────────────────────────────────────────
+# 4. identifier les paires fortement corrélées
+# ─────────────────────────────────────────
+def get_high_correlation_pairs(df, threshold=0.8, exclude=None):
     """
-    Affiche la courbe ROC.
-
-    Args:
-        y_true: Vraies valeurs
-        y_proba: Probabilités prédites pour la classe positive
-        save_path: Chemin pour sauvegarder la figure (optionnel)
+    retourne les paires de features avec corrélation > threshold.
+    exclude : liste de colonnes à ignorer (ex: ['churn', 'customerid'])
     """
-    fpr, tpr, thresholds = roc_curve(y_true, y_proba)
-    roc_auc = auc(fpr, tpr)
+    if exclude is None:
+        exclude = []
 
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr, tpr, color='darkorange', lw=2,
-             label=f'ROC curve (AUC = {roc_auc:.2f})')
-    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--',
-             label='Random Classifier')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curve')
-    plt.legend(loc="lower right")
-    plt.grid(alpha=0.3)
+    num_cols = [c for c in df.select_dtypes(include=['int64', 'float64']).columns
+                if c not in exclude]
 
-    if save_path:
-        plt.savefig(save_path, bbox_inches='tight', dpi=300)
-        print(f"✅ Courbe ROC sauvegardée : {save_path}")
+    corr_matrix = df[num_cols].corr().abs()
+    upper = corr_matrix.where(
+        np.triu(np.ones(corr_matrix.shape), k=1).astype(bool)
+    )
 
-    plt.show()
+    pairs = []
+    for col in upper.columns:
+        for idx in upper.index:
+            val = upper.loc[idx, col]
+            if val > threshold:
+                pairs.append({
+                    'feature_1': idx,
+                    'feature_2': col,
+                    'correlation': round(val, 4)
+                })
+
+    df_pairs = pd.DataFrame(pairs).sort_values('correlation', ascending=False)
+
+    print(f"\npaires avec corrélation > {threshold} : {len(df_pairs)}")
+    if len(df_pairs) > 0:
+        print(df_pairs.to_string(index=False))
+
+    return df_pairs
 
 
-def print_classification_metrics(y_true, y_pred, y_proba=None):
+# ─────────────────────────────────────────
+# 5. parsing de l'adresse ip
+# ─────────────────────────────────────────
+def parse_ip(ip_series):
     """
-    Affiche un rapport complet des métriques de classification.
-
-    Args:
-        y_true: Vraies valeurs
-        y_pred: Prédictions
-        y_proba: Probabilités (optionnel, pour l'AUC)
+    extrait des features depuis une série d'adresses ip.
+    retourne un dataframe avec ip_firstoctet et ip_isprivate.
     """
-    print("\n" + "="*50)
-    print("📊 RAPPORT DE CLASSIFICATION")
-    print("="*50)
+    result = pd.DataFrame()
 
-    print("\n" + classification_report(y_true, y_pred,
-                                       target_names=['No Churn', 'Churn']))
+    # premier octet
+    result['ip_firstoctet'] = ip_series.str.extract(r'^(\d+)').astype(float)
 
-    if y_proba is not None:
-        auc_score = roc_auc_score(y_true, y_proba)
-        print(f"\n🎯 ROC AUC Score: {auc_score:.4f}")
+    # ip privée (1) ou publique (0)
+    def _is_private(ip):
+        try:
+            parts = str(ip).split('.')
+            first  = int(parts[0])
+            second = int(parts[1])
+            return int(
+                first == 10 or
+                (first == 172 and 16 <= second <= 31) or
+                (first == 192 and second == 168)
+            )
+        except:
+            return 0
 
-    print("="*50 + "\n")
+    result['ip_isprivate'] = ip_series.apply(_is_private)
+
+    print(f"  ip parsée → ip_firstoctet + ip_isprivate ✅")
+    print(f"  ip privées : {result['ip_isprivate'].sum()} / {len(result)}")
+
+    return result
 
 
-def plot_feature_importance(model, feature_names, top_n=20, save_path=None):
+# ─────────────────────────────────────────
+# 6. affichage des profils de clusters
+# ─────────────────────────────────────────
+def print_cluster_profiles(df, cluster_col='cluster',
+                            rfm_cols=None, churn_col='churn'):
     """
-    Affiche l'importance des features pour les modèles arborescents.
-
-    Args:
-        model: Modèle entraîné (RandomForest, XGBoost, etc.)
-        feature_names: Liste des noms de features
-        top_n: Nombre de features à afficher
-        save_path: Chemin pour sauvegarder la figure (optionnel)
+    affiche le profil rfm de chaque cluster.
+    utilisé après k-means pour interpréter les segments.
     """
-    if not hasattr(model, 'feature_importances_'):
-        print("⚠️ Ce modèle n'a pas d'attribut feature_importances_")
-        return
+    if rfm_cols is None:
+        rfm_cols = ['recency', 'frequency', 'monetarytotal']
 
-    importances = model.feature_importances_
-    indices = np.argsort(importances)[::-1][:top_n]
+    rfm_cols = [c for c in rfm_cols if c in df.columns]
+    if churn_col in df.columns:
+        rfm_cols.append(churn_col)
 
-    plt.figure(figsize=(10, 8))
-    plt.title(f'Top {top_n} Features les Plus Importantes')
-    plt.barh(range(top_n), importances[indices])
-    plt.yticks(range(top_n), [feature_names[i] for i in indices])
-    plt.xlabel('Importance')
-    plt.gca().invert_yaxis()
+    profiles = df.groupby(cluster_col)[rfm_cols].mean().round(1)
+    profiles['nb_clients'] = df[cluster_col].value_counts().sort_index()
+    profiles['pct_%']      = (profiles['nb_clients'] / len(df) * 100).round(1)
 
-    if save_path:
-        plt.savefig(save_path, bbox_inches='tight', dpi=300)
-        print(f"✅ Feature importance sauvegardée : {save_path}")
+    if churn_col in profiles.columns:
+        profiles['churn_%'] = (profiles[churn_col] * 100).round(1)
 
-    plt.show()
+    print("\n=== profils des clusters ===")
+    print(profiles.to_string())
+
+    return profiles
 
 
-def analyze_churn_distribution(y):
-    """
-    Analyse la distribution des classes de churn.
-
-    Args:
-        y: Series ou array des valeurs de churn
-    """
+# ─────────────────────────────────────────
+# 7. visualisation distribution churn
+# ─────────────────────────────────────────
+def plot_churn_distribution(y, title="distribution du churn", save_path=None):
+    """affiche la distribution des classes churn."""
     counts = pd.Series(y).value_counts()
-    percentages = pd.Series(y).value_counts(normalize=True) * 100
 
-    print("\n" + "="*50)
-    print("📊 DISTRIBUTION DES CLASSES")
-    print("="*50)
-    print(f"No Churn (0): {counts.get(0, 0):,} ({percentages.get(0, 0):.2f}%)")
-    print(f"Churn (1):    {counts.get(1, 0):,} ({percentages.get(1, 0):.2f}%)")
-    print(f"Total:        {len(y):,}")
+    plt.figure(figsize=(6, 4))
+    bars = plt.bar(['fidèles (0)', 'partis (1)'], counts.values,
+                   color=['steelblue', 'coral'])
+    plt.title(title)
+    plt.ylabel("nombre de clients")
 
-    # Calcul du déséquilibre
-    if len(counts) == 2:
-        imbalance_ratio = counts.max() / counts.min()
-        print(f"\n⚖️ Ratio de déséquilibre: {imbalance_ratio:.2f}:1")
+    for bar, val in zip(bars, counts.values):
+        plt.text(bar.get_x() + bar.get_width()/2,
+                 bar.get_height() + 10,
+                 f"{val}\n({val/sum(counts.values)*100:.1f}%)",
+                 ha='center', fontsize=10)
 
-        if imbalance_ratio > 3:
-            print("⚠️ Classes très déséquilibrées ! Considérez SMOTE ou class_weight.")
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        print(f"  graphique sauvegardé : {save_path}")
+    plt.show()
 
-    print("="*50 + "\n")
+
+# ─────────────────────────────────────────
+# 8. rapport de qualité des données
+# ─────────────────────────────────────────
+def data_quality_report(df):
+    """génère un rapport complet de qualité des données."""
+    report = pd.DataFrame({
+        'type'        : df.dtypes,
+        'nan_count'   : df.isnull().sum(),
+        'nan_%'       : (df.isnull().sum() / len(df) * 100).round(2),
+        'unique'      : df.nunique(),
+        'unique_%'    : (df.nunique() / len(df) * 100).round(2),
+    })
+
+    # détecter les colonnes constantes
+    report['constante'] = report['unique'] == 1
+
+    # détecter les colonnes quasi-constantes (>95% même valeur)
+    report['quasi_constante'] = report['unique_%'] < 5
+
+    print("=== rapport qualité des données ===")
+    print(report.to_string())
+
+    print(f"\ncolonnes constantes      : {report['constante'].sum()}")
+    print(f"colonnes quasi-constantes : {report['quasi_constante'].sum()}")
+    print(f"colonnes avec >30% nan   : {(report['nan_%'] > 30).sum()}")
+
+    return report
 
 
-def save_model_report(model_name, metrics, save_path):
+# ─────────────────────────────────────────
+# 9. vérification data leakage
+# ─────────────────────────────────────────
+def check_leakage(df, target='churn', threshold=0.8):
     """
-    Sauvegarde un rapport de performance du modèle.
-
-    Args:
-        model_name: Nom du modèle
-        metrics: Dictionnaire des métriques
-        save_path: Chemin pour sauvegarder le rapport
+    détecte les colonnes trop corrélées avec la target.
+    corrélation > threshold → fuite de données probable.
     """
-    with open(save_path, 'w', encoding='utf-8') as f:
-        f.write(f"# Rapport de Performance - {model_name}\n\n")
-        f.write("## Métriques\n\n")
-        for metric, value in metrics.items():
-            f.write(f"- **{metric}**: {value:.4f}\n")
-        f.write(f"\n*Généré automatiquement*\n")
+    num_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
 
-    print(f"✅ Rapport sauvegardé : {save_path}")
-
-
-def detect_data_leakage(X_train, y_train, threshold=0.95):
-    """
-    Détecte les features potentiellement en fuite de données.
-
-    Args:
-        X_train: Features d'entraînement
-        y_train: Target
-        threshold: Seuil de corrélation pour détecter la fuite
-
-    Returns:
-        Liste des colonnes suspectes
-    """
-    numeric_cols = X_train.select_dtypes(include=[np.number]).columns
-
-    if len(numeric_cols) == 0:
-        print("⚠️ Aucune colonne numérique trouvée")
+    if target not in num_cols:
+        print(f"target '{target}' non trouvée dans les colonnes numériques")
         return []
 
-    df_temp = pd.concat([X_train[numeric_cols], y_train], axis=1)
-    correlations = df_temp.corr()[y_train.name].abs().sort_values(ascending=False)
+    corr_target = df[num_cols].corr()[target].abs().sort_values(ascending=False)
+    leaky = corr_target[corr_target > threshold].index.tolist()
+    leaky = [c for c in leaky if c != target]
 
-    # Exclure la target elle-même
-    correlations = correlations[correlations.index != y_train.name]
-
-    leaky_features = correlations[correlations > threshold].index.tolist()
-
-    if leaky_features:
-        print("\n⚠️ ATTENTION: Features suspectes de fuite de données détectées !")
-        print("="*50)
-        for feat in leaky_features:
-            print(f"  - {feat}: corrélation = {correlations[feat]:.4f}")
-        print("="*50 + "\n")
+    if leaky:
+        print(f"\n⚠️ colonnes suspectes (corrélation > {threshold} avec {target}) :")
+        for col in leaky:
+            print(f"   {col} : {corr_target[col]:.3f}")
     else:
-        print("✅ Aucune fuite de données détectée (threshold={threshold})")
+        print(f"✅ aucune fuite détectée (seuil {threshold})")
 
-    return leaky_features
-
-
-def compare_models(results_dict):
-    """
-    Compare les performances de plusieurs modèles.
-
-    Args:
-        results_dict: Dictionnaire {model_name: metrics_dict}
-    """
-    df = pd.DataFrame(results_dict).T
-
-    print("\n" + "="*60)
-    print("📊 COMPARAISON DES MODÈLES")
-    print("="*60)
-    print(df.to_string())
-    print("="*60 + "\n")
-
-    # Trouver le meilleur modèle par F1-score
-    if 'f1_score' in df.columns:
-        best_model = df['f1_score'].idxmax()
-        print(f"🏆 Meilleur modèle (F1-score): {best_model}")
-        print(f"   F1-score: {df.loc[best_model, 'f1_score']:.4f}\n")
-
-    return df
+    return leaky
