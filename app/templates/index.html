@@ -283,8 +283,23 @@
                 <div class="proba-fill" style="width: {{ proba | default(0) }}%"></div>
             </div>
             {% endif %}
+            {% if prediction is not none %}
+    <h2>
+        {% if prediction == 1 %}
+            ⚠️ Customer WILL Churn
+        {% else %}
+            ✅ Customer is Loyal
+        {% endif %}
+    </h2>
+
+        <p>Churn probability: {{ proba }}%</p>
+        <p>Niveau de risque: {{ niveau }}</p>
+        {% endif %}
+
         </div>
         {% endif %}
+        <p><strong>Recommendation:</strong> {{ conseil }}</p>
+
 
     </div>
 </div>

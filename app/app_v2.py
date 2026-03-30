@@ -6,11 +6,11 @@ import pandas as pd
 app = Flask(__name__)
 
 # Load SIMPLE model (only 5 features!)
-model  = joblib.load("models/simple_model.pkl")
-scaler = joblib.load("models/simple_scaler.pkl")
+model  = joblib.load("models/simple_model_v2.pkl")
+scaler = joblib.load("models/simple_scaler_v2.pkl")
 
 # Features the simple model expects
-FEATURE_NAMES = ['age', 'frequency', 'monetarytotal', 'totaltransactions', 'weekendpurchaseratio']
+FEATURE_NAMES = ['age', 'frequency', 'monetarytotal', 'totaltransactions', 'weekendpurchaseratio', 'avgquantitypertransaction', 'recency']
 
 # Load training data to get median values for missing fields
 X_train_raw = pd.read_csv("data/processed/step3_feature_engineering.csv")
@@ -43,6 +43,8 @@ def predict():
         monetary_total = get_float(request.form, 'monetary_total')
         total_trans    = get_float(request.form, 'total_transactions')
         weekend_ratio  = get_float(request.form, 'weekend_ratio')
+        total_quantity = get_float(request.form, 'total_quantity')
+        recency        = get_float(request.form, 'recency')
 
         # Build input dictionary
         user_inputs = {
@@ -51,6 +53,8 @@ def predict():
             'monetarytotal': monetary_total,
             'totaltransactions': total_trans,
             'weekendpurchaseratio': weekend_ratio,
+            'avgquantitypertransaction': total_quantity,
+            'recency': recency,
         }
 
         print(f"\n[DEBUG] User inputs: {user_inputs}")
