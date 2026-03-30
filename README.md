@@ -6,7 +6,7 @@
 
 Ce projet vise à analyser le comportement des clients d'un e-commerce de cadeaux afin de prédire le churn (désabonnement ou perte de clients) et améliorer les stratégies marketing.
 
-**Caractéristique unique:** Ce projet implémente **deux modèles distincts** - un modèle de recherche (103 features, 92.46% accuracy) pour l'analyse approfondie et un modèle de déploiement (5 features, 67.22% accuracy) pour l'interface web Flask.
+**Caractéristique unique:** Ce projet implémente **deux modèles distincts** - un modèle de recherche (103 features, 92.46% accuracy) pour l'analyse approfondie et un modèle de déploiement (7 features, 67.22% accuracy) pour l'interface web Flask.
 
 🎯 Objectifs
 
@@ -25,18 +25,18 @@ Ce projet vise à analyser le comportement des clients d'un e-commerce de cadeau
 - ✅ Usage: Analyse historique, batch processing, insights business
 - ✅ Features: 103 (après feature engineering et suppression des features de fuite)
 
-**Modèle de Déploiement (5 features) - `models/simple_model.pkl`**
+**Modèle de Déploiement (7 features) - `models/simple_model.pkl`**
 - ✅ Accuracy: **67.22%** (standard industrie: 60-75% pour modèles simples)
 - ✅ Precision: 0.5603 | Recall: 0.4948 | F1-Score: 0.5255
 - ✅ Usage: **Interface web Flask** - prédictions en temps réel
-- ✅ Features: 5 (age, frequency, monetarytotal, totaltransactions, weekendpurchaseratio)
+- ✅ Features: 7 (age, frequency, monetarytotal, totaltransactions, weekendpurchaseratio,Recency,TotalQuantity)
 
 **Justification Technique:**
 
 Bien que le modèle de recherche atteigne 92.46% d'accuracy, il est **impraticable en production** car il nécessite 103 inputs que les utilisateurs ne peuvent pas fournir via un formulaire web.
 
 Le modèle de déploiement sacrifie de l'accuracy (67% vs 92%) pour gagner en:
-- ✅ **Utilisabilité**: Seulement 5 champs à remplir
+- ✅ **Utilisabilité**: Seulement 7 champs à remplir
 - ✅ **Expérience utilisateur**: Formulaire simple et rapide
 - ✅ **Valeur business**: Identifie 49% des churners en ne contactant que 41% des clients
 - ✅ **Fonctionnement correct**: Les prédictions répondent aux inputs utilisateur
@@ -194,11 +194,6 @@ Puis ouvrir le navigateur à: **http://localhost:5000**
 **Modèle de recherche complet (103 features):**
 ```bash
 python src/train_model_v2.py
-```
-
-**Modèle de déploiement simple (5 features):**
-```bash
-python train_simple_model.py
 ```
 
 ### Option 3: Exploration des Données
