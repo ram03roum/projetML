@@ -99,6 +99,8 @@ def predict():
         return render_template('index.html',
                                prediction=prediction,
                                proba=proba,
+                               niveau=niveau,
+                               conseil=conseil,
                                error=None)
 
     except Exception as e:
@@ -107,6 +109,8 @@ def predict():
         return render_template('index.html',
                                prediction=None,
                                proba=None,
+                                niveau=None,
+                                conseil=None,
                                error=str(e))
 
 
