@@ -1,0 +1,28 @@
+Simple Model Features for Flask App
+==================================================
+
+Total features: 7
+
+Features (in order):
+1. age
+2. frequency
+3. monetarytotal
+4. totaltransactions
+5. weekendpurchaseratio
+6. avgquantitypertransaction
+7. recency
+
+Performance Metrics:
+Accuracy:  1.0000 (100.00%)
+Precision: 1.0000
+Recall:    1.0000
+F1-Score:  1.0000
+
+Feature Importance (sorted):
+1. recency                  : 0.8311
+2. totaltransactions        : 0.0596
+3. frequency                : 0.0591
+4. monetarytotal            : 0.0341
+5. avgquantitypertransaction: 0.0063
+6. weekendpurchaseratio     : 0.0056
+7. age                      : 0.0043
