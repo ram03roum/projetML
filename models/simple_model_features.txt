@@ -1,28 +1,22 @@
-Simple Model Features for Flask App
+Simple Calibrated Model
 ==================================================
 
-Total features: 7
+Features (5):
+  1. age
+  2. frequency
+  3. monetarytotal
+  4. weekendpurchaseratio
+  5. avgdaysbetweenpurchases
 
-Features (in order):
-1. age
-2. frequency
-3. monetarytotal
-4. totaltransactions
-5. weekendpurchaseratio
-6. avgquantitypertransaction
-7. recency
+Metrics:
+  Accuracy : 0.6686
+  Precision: 0.5011
+  Recall   : 0.7491
+  F1-Score : 0.6006
 
-Performance Metrics:
-Accuracy:  1.0000 (100.00%)
-Precision: 1.0000
-Recall:    1.0000
-F1-Score:  1.0000
-
-Feature Importance (sorted):
-1. recency                  : 0.8311
-2. totaltransactions        : 0.0596
-3. frequency                : 0.0591
-4. monetarytotal            : 0.0341
-5. avgquantitypertransaction: 0.0063
-6. weekendpurchaseratio     : 0.0056
-7. age                      : 0.0043
+Feature Importance:
+  1. frequency                : 0.4752
+  2. monetarytotal            : 0.3417
+  3. avgdaysbetweenpurchases  : 0.1414
+  4. weekendpurchaseratio     : 0.0289
+  5. age                      : 0.0128

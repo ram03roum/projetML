@@ -1,4 +1,4 @@
-import pandas as pd
+﻿import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -86,7 +86,10 @@ def drop_leaky_cols(X_train, X_test):
                         'customertenuredays', 'CustomerTenureDays',
                         'firstpurchasedaysago', 'FirstPurchaseDaysAgo',
                         'monetaryperday', 'MonetaryPerDay',
-                        'monetaryperday_log', 'MonetaryPerDay_log']
+                        'monetaryperday_log', 'MonetaryPerDay_log',
+                        'preferredmonth', 'PreferredMonth',
+                        'favoriteseason', 'FavoriteSeason'
+                        ]
 
     # Also remove any encoded versions (e.g., churnriskcategory_Faible, customertype_Perdu, etc.)
     leak_prefixes = ['churnriskcategory_', 'customertype_', 'rfmsegment_', 'loyaltylevel_']
@@ -129,7 +132,7 @@ def drop_leaky_cols(X_train, X_test):
     return X_train, X_test
 
 
-def remove_correlated_features(X_train, X_test, threshold=0.90):
+def remove_correlated_features(X_train, X_test, threshold=0.80):
     numeric_cols = X_train.select_dtypes(include=[np.number]).columns
     corr_matrix = X_train[numeric_cols].corr().abs()
     upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
@@ -221,37 +224,51 @@ def apply_smote(X_train, y_train, random_state=42):
 # -----------------------------------------
 def preprocess_pipeline(path, target_col='churn'):
 
+    feature_log = {}
+
     print("-" * 40)
     print("  Chargement...")
     df = load_data(path)
-
+    feature_log["chargement"] = df.shape[1]
+    print("  Shape initiale :", df.shape)
     print("  Correction des aberrants...")
     df = fix_outliers(df)
-
+    print("  Shape apr s correction aberrants :", df.shape)
+    feature_log["correction_aberrants"] = df.shape[1]
     print("  Imputation des NaN...")
     df = impute_missing(df)
+    feature_log["imputation_nan"] = df.shape[1]
 
     print("   S paration X / y...")
     X, y = split_X_y(df, target_col)
+    feature_log["split_x_y"] = X.shape[1]
 
     print("  Train / Test split...")
     X_train, X_test, y_train, y_test = split_train_test(X, y)
+    feature_log["train_test_split"] = X_train.shape[1]
+    # 🔥 CORRÉLATION APRÈS SPLIT (important)
+    corr = X_train.copy()
+    corr[target_col] = y_train
 
+    corr = corr.corr(numeric_only=True)[target_col].abs().sort_values(ascending=False)
+
+    print("\n🔍 Corrélation avec la target :")
+    print(corr.head(15))
     print("  Suppression colonnes fuite...")
     X_train, X_test = drop_leaky_cols(X_train, X_test)
 
     print("  Suppression des features corr l es...")
-    X_train, X_test = remove_correlated_features(X_train, X_test, threshold=0.90)
+    X_train, X_test = remove_correlated_features(X_train, X_test, threshold=0.80)
 
     print("   Encodage (get_dummies)...")
     X_train, X_test = encode_data(X_train, X_test)
-
+    feature_log["encodage"] = X_train.shape[1]
     print("  Nettoyage inf / NaN r siduels...")
     X_train, X_test = clean_inf_nan(X_train, X_test)
-
+    feature_log["nettoyage_inf_nan"] = X_train.shape[1]
     print("  Scaling (apr s encodage)...")
     X_train, X_test, scaler = scale_data(X_train, X_test)
-
+    feature_log["scaling"] = X_train.shape[1]
     print("   SMOTE...")
     X_train_resampled, y_train_resampled = apply_smote(X_train, y_train)
 
@@ -271,12 +288,37 @@ def preprocess_pipeline(path, target_col='churn'):
     else:
         print(f"  [OK] Colonnes identiques: {len(X_train.columns)} features")
 
+
+
+    # # résumé final
+    # print("\n" + "="*50)
+    # print("  RÉSUMÉ FEATURES PAR ÉTAPE")
+    # print("="*50)
+    # print(f"  Chargement initial     : {df.shape[1]} features")
+    # print(f"  Après X/y split        : {X.shape[1]} features")
+    # print(f"  Après anti-leakage     : {X_train.shape[1] + len([c for c in X.columns if c not in X_train.columns])} → {X_train.shape[1]} features")
+    # print(f"  Après corr > 0.80      : {X_train.shape[1]} features")
+    # print(f"  Après encodage OHE     : {X_train.shape[1]} features")
+    # print(f"  Lignes train (SMOTE)   : {X_train_resampled.shape[0]} lignes")
+    # print("="*50)
+    print("\n" + "="*50)
+    print("  RÉSUMÉ ÉVOLUTION FEATURES")
+    print("="*50)
+
+    for step, n in feature_log.items():
+        print(f"{step:<20} : {n} features")
+
+    print("="*50)
+
+
+
     print("-" * 40)
     print(f"[OK] Pipeline termin e !")
     print(f"   X_train       : {X_train.shape}")
     print(f"   X_train SMOTE : {X_train_resampled.shape}")
     print(f"   X_test        : {X_test.shape}")
     print("-" * 40)
+
 
     return (
         X_train,

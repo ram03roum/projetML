@@ -1,0 +1,22 @@
+{
+  "clf_features": [
+    "frequency",
+    "purchaseintensity",
+    "uniqueinvoices",
+    "regyear",
+    "regmonth_sin",
+    "regmonth_cos",
+    "uniqueproducts",
+    "avgdaysbetweenpurchases"
+  ],
+  "reg_features": [
+    "frequency",
+    "uniqueinvoices",
+    "uniqueproducts",
+    "avgdaysbetweenpurchases",
+    "avgbasketvalue",
+    "purchaseintensity",
+    "satisfactionscore",
+    "monetarytotal"
+  ]
+}

@@ -2,307 +2,496 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Churn Prediction</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetailML — Analyse Client</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;600&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg: #0f1117;
-            --card: #1a1d27;
-            --border: #2a2d3a;
-            --accent: #4f8ef7;
-            --danger: #f74f6a;
-            --success: #4ff79e;
-            --text: #e2e8f0;
-            --muted: #64748b;
+            --bg:      #f4f5f9;
+            --s1:      #ffffff;
+            --border:  #e2e4ec;
+            --text:    #111827;
+            --muted:   #6b7280;
+            --accent:  #4f46e5;
+            --a2:      #6366f1;
+            --success: #059669;
+            --warn:    #d97706;
+            --danger:  #dc2626;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Syne', sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            padding: 48px 20px 100px;
+            background-image:
+                radial-gradient(ellipse 50% 30% at 10% 0%, rgba(99,102,241,.07) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 25% at 90% 100%, rgba(99,102,241,.05) 0%, transparent 60%);
         }
 
-        .container {
-            width: 100%;
-            max-width: 480px;
+        .page { max-width: 960px; margin: 0 auto; }
+
+        /* ── header ── */
+        header { text-align: center; margin-bottom: 48px; }
+        .tag {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px; color: var(--a2);
+            background: rgba(99,102,241,.08);
+            border: 1px solid rgba(99,102,241,.2);
+            border-radius: 20px; padding: 5px 16px;
+            display: inline-block; margin-bottom: 16px;
+            letter-spacing: .12em; text-transform: uppercase;
+        }
+        header h1 {
+            font-size: 36px; font-weight: 800; letter-spacing: -.04em; margin-bottom: 10px;
+            background: linear-gradient(120deg, #111827 30%, var(--a2));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        header p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+        /* ── layout ── */
+        .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+
+        /* ── form card ── */
+        .form-card {
+            background: var(--s1); border: 1px solid var(--border);
+            border-radius: 20px; padding: 30px;
+            box-shadow: 0 2px 16px rgba(0,0,0,.05);
+        }
+        .card-label {
+            font-size: 10px; font-weight: 700; letter-spacing: .14em;
+            text-transform: uppercase; color: var(--muted); margin-bottom: 22px;
+        }
+        .divider { display: flex; align-items: center; gap: 10px; margin: 6px 0 14px; }
+        .divider span {
+            font-size: 10px; font-weight: 700; letter-spacing: .1em;
+            text-transform: uppercase; color: var(--muted); white-space: nowrap;
+        }
+        .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field label { font-size: 11px; font-weight: 600; color: var(--muted); }
+        .field input {
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 9px 12px;
+            font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text);
+            transition: border-color .2s, box-shadow .2s; width: 100%;
+        }
+        .field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+        .field .hint { font-size: 10px; color: var(--muted); opacity: .7; }
+
+        .btn {
+            margin-top: 22px; width: 100%; padding: 13px;
+            background: var(--accent); border: none; border-radius: 12px;
+            color: #fff; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+            cursor: pointer; transition: background .2s, transform .15s, box-shadow .2s;
+            box-shadow: 0 4px 18px rgba(79,70,229,.25);
+        }
+        .btn:hover { background: #4338ca; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(79,70,229,.35); }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .error {
+            display: none; margin-top: 10px; padding: 10px 14px;
+            background: #fef2f2; border: 1px solid #fca5a5;
+            border-radius: 10px; font-size: 12px; color: var(--danger);
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 32px;
+        /* ── placeholder ── */
+        .placeholder {
+            background: var(--s1); border: 1.5px dashed var(--border); border-radius: 20px;
+            padding: 60px 28px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+            gap: 12px; color: var(--muted); box-shadow: 0 2px 16px rgba(0,0,0,.04);
         }
+        .placeholder.hidden { display: none; }
+        .ph-icon { font-size: 38px; opacity: .3; }
+        .ph-text { font-size: 13px; line-height: 1.7; }
 
-        .header .badge {
-            font-family: 'Space Mono', monospace;
-            font-size: 11px;
-            letter-spacing: 3px;
-            color: var(--accent);
-            text-transform: uppercase;
-            margin-bottom: 8px;
+        /* ══════════════════════
+           RESULT CARD
+        ══════════════════════ */
+        .result-card { display: none; flex-direction: column; gap: 14px; }
+        .result-card.visible { display: flex; }
+
+        /* HERO */
+        .hero {
+            border-radius: 20px; padding: 26px 26px 22px;
+            position: relative; overflow: hidden;
+            border: 1.5px solid transparent; box-shadow: 0 2px 20px rgba(0,0,0,.07);
         }
+        .hero-success { background: #ecfdf5; border-color: #6ee7b7; }
+        .hero-warning { background: #fffbeb; border-color: #fcd34d; }
+        .hero-danger  { background: #fef2f2; border-color: #fca5a5; }
 
-        .header h1 {
-            font-size: 28px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
+        .hero-inner { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+
+        .big-icon {
+            width: 64px; height: 64px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; flex-shrink: 0;
         }
+        .bi-success { background: #d1fae5; border: 2px solid #6ee7b7; }
+        .bi-warning { background: #fef3c7; border: 2px solid #fcd34d; }
+        .bi-danger  { background: #fee2e2; border: 2px solid #fca5a5; }
 
-        .header p {
-            color: var(--muted);
-            font-size: 14px;
-            margin-top: 6px;
+        .hero-meta { flex: 1; }
+        .hero-eyebrow {
+            font-size: 9px; font-weight: 700; letter-spacing: .16em;
+            text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
         }
+        .hero-title { font-size: 22px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+        .ht-success { color: var(--success); }
+        .ht-warning { color: var(--warn); }
+        .ht-danger  { color: var(--danger); }
+        .hero-sub { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 4px; }
 
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 28px;
+        .prob-track { height: 6px; background: rgba(0,0,0,.08); border-radius: 6px; overflow: hidden; }
+        .prob-fill { height: 100%; border-radius: 6px; transition: width 1.4s cubic-bezier(.4,0,.2,1); }
+        .pf-success { background: linear-gradient(90deg, #34d399, #059669); }
+        .pf-warning { background: linear-gradient(90deg, #fbbf24, #d97706); }
+        .pf-danger  { background: linear-gradient(90deg, #f87171, #dc2626); }
+
+        .prob-row { display: flex; justify-content: space-between; margin-top: 6px; }
+        .prob-row span { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); }
+        .prob-row strong { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text); }
+
+        /* TILES */
+        .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .tile {
+            background: var(--s1); border: 1px solid var(--border); border-radius: 16px;
+            padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;
+            box-shadow: 0 1px 8px rgba(0,0,0,.04); transition: box-shadow .2s, transform .2s;
         }
+        .tile:hover { box-shadow: 0 4px 18px rgba(0,0,0,.09); transform: translateY(-2px); }
 
-        .section-title {
-            font-family: 'Space Mono', monospace;
-            font-size: 10px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--muted);
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border);
+        .tile-label { font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+        /* pill niveau */
+        .pill {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 6px 13px; border-radius: 30px; font-size: 13px; font-weight: 700;
         }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
+        .pill-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+            animation: blink 2s ease-in-out infinite;
         }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+        @keyframes blink {
+            0%,100% { opacity:1; transform:scale(1); }
+            50%      { opacity:.35; transform:scale(.6); }
         }
+        .pill-success { background: #d1fae5; border: 1px solid #6ee7b7; color: var(--success); }
+        .pill-warning { background: #fef3c7; border: 1px solid #fcd34d; color: var(--warn); }
+        .pill-danger  { background: #fee2e2; border: 1px solid #fca5a5; color: var(--danger); }
+        .dot-success  { background: var(--success); }
+        .dot-warning  { background: var(--warn); }
+        .dot-danger   { background: var(--danger); }
 
-        .form-group.full {
+        .statut-val { font-size: 15px; font-weight: 700; color: var(--text); }
+
+        /* revenu */
+        .tile-revenu {
             grid-column: 1 / -1;
+            background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+            border-color: #c7d2fe;
+        }
+        .revenu-amount {
+            font-family: 'DM Mono', monospace; font-size: 28px;
+            font-weight: 500; color: var(--a2); letter-spacing: -.02em;
         }
 
-        label {
-            font-size: 12px;
-            color: var(--muted);
-            font-weight: 600;
-            letter-spacing: 0.3px;
+        /* cluster segment */
+        .tile-cluster {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #f0fdf4 0%, #fefce8 100%);
+            border-color: #bbf7d0;
         }
-
-        input {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 14px;
-            color: var(--text);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14px;
-            transition: border-color 0.2s;
-            width: 100%;
+        .cluster-top {
+            display: flex; align-items: center; gap: 12px;
         }
-
-        input:focus {
-            outline: none;
-            border-color: var(--accent);
+        .cluster-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 14px; border-radius: 30px;
+            font-size: 13px; font-weight: 700;
+            background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46;
+            white-space: nowrap;
         }
+        .cluster-badge-vip     { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+        .cluster-badge-regular { background: #dbeafe; border-color: #93c5fd; color: #1e40af; }
+        .cluster-badge-occ     { background: #f3e8ff; border-color: #d8b4fe; color: #6b21a8; }
+        .cluster-badge-inactif { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
 
-        input::placeholder { color: var(--muted); }
+        .cluster-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 2px; }
 
-        .divider {
-            border: none;
-            border-top: 1px solid var(--border);
-            margin: 20px 0;
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            background: var(--accent);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            letter-spacing: 0.3px;
-            transition: opacity 0.2s, transform 0.1s;
-        }
-
-        button:hover { opacity: 0.88; transform: translateY(-1px); }
-        button:active { transform: translateY(0); }
-
-        /* --- Result --- */
-        .result {
-            margin-top: 20px;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid;
-        }
-
-        .result.churn {
-            background: rgba(247, 79, 106, 0.08);
-            border-color: rgba(247, 79, 106, 0.3);
-        }
-
-        .result.no-churn {
-            background: rgba(79, 247, 158, 0.08);
-            border-color: rgba(79, 247, 158, 0.3);
-        }
-
-        .result .emoji { font-size: 32px; margin-bottom: 8px; }
-
-        .result .label {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .result.churn .label  { color: var(--danger); }
-        .result.no-churn .label { color: var(--success); }
-
-        .result .proba {
-            font-family: 'Space Mono', monospace;
-            font-size: 13px;
-            color: var(--muted);
-        }
-
-        /* Progress bar */
-        .proba-bar {
-            margin-top: 12px;
-            height: 6px;
-            background: var(--border);
-            border-radius: 99px;
-            overflow: hidden;
-        }
-
-        .proba-fill {
-            height: 100%;
-            border-radius: 99px;
-            transition: width 0.6s ease;
-        }
-
-        .churn .proba-fill    { background: var(--danger); }
-        .no-churn .proba-fill { background: var(--success); }
-
-        /* Error */
-        .error-box {
-            margin-top: 16px;
-            background: rgba(247, 79, 106, 0.1);
-            border: 1px solid rgba(247, 79, 106, 0.3);
-            border-radius: 10px;
-            padding: 14px;
-            font-size: 13px;
-            color: var(--danger);
-            font-family: 'Space Mono', monospace;
-            word-break: break-all;
-        }
+        /* conseil */
+        .tile-conseil { grid-column: 1 / -1; }
+        .conseil-body { font-size: 13px; color: var(--text); line-height: 1.65; opacity: .75; }
     </style>
 </head>
 <body>
+<div class="page">
 
-<div class="container">
+    <header>
+        <h1>Analyse Comportementale Client</h1>
 
-    <div class="header">
-        <div class="badge">ML · Retail Analytics</div>
-        <h1>Churn Prediction</h1>
-        <p>Predict if a customer is about to leave</p>
-    </div>
+    <div class="layout">
 
-    <div class="card">
-<form action="/predict" method="post">
+        <!-- formulaire -->
+        <div class="form-card">
+            <div class="card-label">Données client</div>
 
-            <div class="section-title">Client Profile</div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Age</label>
-                    <input type="number" name="age" placeholder="35" min="18" max="81" required>
+            <div class="divider"><span>Activité d'achat</span></div>
+            <div class="grid2">
+                <div class="field">
+                    <label>Fréquence d'achat</label>
+                    <input type="number" id="frequency" value="8" min="1" step="1">
+                    <span class="hint">Nombre de commandes</span>
                 </div>
-                <div class="form-group">
-                    <label>Weekend Ratio</label>
-                    <input type="number" step="0.01" name="weekend_ratio" placeholder="0.40" min="0" max="1" required>
+                <div class="field">
+                    <label>Nombre de factures</label>
+                    <input type="number" id="uniqueinvoices" value="6" min="1" step="1">
+                    <span class="hint">Factures distinctes</span>
                 </div>
-            </div>
-
-            <div class="section-title">Transaction Data</div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Total Transactions</label>
-                    <input type="number" name="total_transactions" placeholder="20" required>
+                <div class="field">
+                    <label>Produits uniques</label>
+                    <input type="number" id="uniqueproducts" value="12" min="1" step="1">
+                    <span class="hint">Diversité du catalogue</span>
                 </div>
-                <div class="form-group">
-                    <label>Total Quantity</label>
-                    <input type="number" name="total_quantity" placeholder="150" required>
-                </div>
-                <div class="form-group">
-                    <label>Recency (days)</label>
-                    <input type="number" name="recency" placeholder="30">
-                </div>
-                <div class="form-group">
-                    <label>Frequency</label>
-                    <input type="number" name="frequency" placeholder="5">
-                </div>
-                <div class="form-group full">
-                    <label>Monetary Total (£)</label>
-                    <input type="number" step="0.01" name="monetary_total" placeholder="500.00">
+                <div class="field">
+                    <label>Jours entre achats</label>
+                    <input type="number" id="avgdaysbetweenpurchases" value="25" min="1" step="1">
+                    <span class="hint">Délai moyen</span>
                 </div>
             </div>
 
-            <hr class="divider">
-            <button type="submit">Predict Churn →</button>
-        </form>
-
-        {% if error %}
-        <div class="error-box">⚠ {{ error }}</div>
-        {% endif %}
-
-        {% if prediction is not none %}
-        <div class="result {% if prediction == 1 %}churn{% else %}no-churn{% endif %}">
-            <div class="emoji">{% if prediction == 1 %}⚠️{% else %}✅{% endif %}</div>
-            <div class="label">
-                {% if prediction == 1 %}Customer WILL Churn{% else %}Customer will NOT Churn{% endif %}
+            <div class="divider" style="margin-top:16px"><span>Valeur & Satisfaction</span></div>
+            <div class="grid2">
+                <div class="field">
+                    <label>Revenu total (£)</label>
+                    <input type="number" id="monetarytotal" value="850" min="0" step="10">
+                    <span class="hint">Montant total dépensé</span>
+                </div>
+                <div class="field">
+                    <label>Score satisfaction</label>
+                    <input type="number" id="satisfactionscore" value="3.5" min="1" max="5" step="0.5">
+                    <span class="hint">De 1 (mauvais) à 5 (excellent)</span>
+                </div>
             </div>
-            {% if proba is defined %}
-            <div class="proba">Churn probability: {{ proba }}%</div>
-            <div class="proba-bar">
-                <div class="proba-fill" style="width: {{ proba | default(0) }}%"></div>
+
+            <div class="divider" style="margin-top:16px"><span>Inscription</span></div>
+            <div class="grid2">
+                <div class="field">
+                    <label>Année d'inscription</label>
+                    <input type="number" id="regyear" value="2021" min="2010" max="2025" step="1">
+                    <span class="hint">Ancienneté du compte</span>
+                </div>
+                <div class="field">
+                    <label>Mois d'inscription</label>
+                    <input type="number" id="regmonth" value="6" min="1" max="12" step="1">
+                    <span class="hint">1 = Janvier, 12 = Décembre</span>
+                </div>
             </div>
-            {% endif %}
-            {% if prediction is not none %}
-    <h2>
-        {% if prediction == 1 %}
-            ⚠️ Customer WILL Churn
-        {% else %}
-            ✅ Customer is Loyal
-        {% endif %}
-    </h2>
 
-        <p>Churn probability: {{ proba }}%</p>
-        <p>Niveau de risque: {{ niveau }}</p>
-        {% endif %}
-
+            <button class="btn" id="btn" onclick="analyser()">Analyser le client →</button>
+            <div class="error" id="error"></div>
         </div>
-        {% endif %}
-        <p><strong>Recommendation:</strong> {{ conseil }}</p>
 
+        <!-- résultat -->
+        <div>
+            <div class="placeholder" id="placeholder">
+                <div class="ph-icon">📊</div>
+                <div class="ph-text">
+                    Renseignez les données du client<br>
+                    et cliquez sur <strong style="color:var(--text)">Analyser</strong>
+                </div>
+            </div>
 
+            <div class="result-card" id="result-card">
+
+                <!-- HERO -->
+                <div class="hero" id="hero-block">
+                    <div class="hero-inner">
+                        <div class="big-icon" id="big-icon"><span id="hero-emoji"></span></div>
+                        <div class="hero-meta">
+                            <div class="hero-eyebrow">Résultat de l'analyse</div>
+                            <div class="hero-title" id="hero-title">—</div>
+                            <div class="hero-sub" id="hero-sub">—</div>
+                        </div>
+                    </div>
+                    <div class="prob-track">
+                        <div class="prob-fill" id="prob-bar" style="width:0%"></div>
+                    </div>
+                    <div class="prob-row">
+                        <span>0%</span>
+                        <strong id="prob-pct">—</strong>
+                        <span>100%</span>
+                    </div>
+                </div>
+
+                <!-- TILES -->
+                <div class="tiles">
+
+                    <!-- Niveau de risque -->
+                    <div class="tile">
+                        <div class="tile-label">⚡ Niveau de risque</div>
+                        <div class="pill" id="pill-niveau">
+                            <span class="pill-dot" id="pill-dot"></span>
+                            <span id="pill-text">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Statut client -->
+                    <div class="tile">
+                        <div class="tile-label">👤 Statut client</div>
+                        <div class="statut-val" id="tile-statut">—</div>
+                    </div>
+
+                    <!-- Revenu estimé -->
+                    <div class="tile tile-revenu">
+                        <div class="tile-label">💰 Revenu estimé (ML)</div>
+                        <div class="revenu-amount" id="tile-revenu-val">—</div>
+                    </div>
+
+                    <!-- Segment client (cluster) -->
+                    <div class="tile tile-cluster">
+                        <div class="tile-label">🏷️ Segment client</div>
+                        <div class="cluster-top">
+                            <span class="cluster-badge" id="cluster-badge">—</span>
+                        </div>
+                        <div class="cluster-desc" id="cluster-desc">—</div>
+                    </div>
+
+                    <!-- Recommandation -->
+                    <div class="tile tile-conseil">
+                        <div class="tile-label">💡 Recommandation</div>
+                        <div class="conseil-body" id="tile-conseil">—</div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
+<script>
+function getCouleur(prob) {
+    if (prob >= 60) return 'danger';
+    if (prob >= 30) return 'warning';
+    return 'success';
+}
+
+// Associe un style de badge au nom du cluster
+function getClusterBadgeClass(nom) {
+    const n = nom.toLowerCase();
+    if (n.includes('vip'))        return 'cluster-badge cluster-badge-vip';
+    if (n.includes('régulier'))   return 'cluster-badge cluster-badge-regular';
+    if (n.includes('occasionnel'))return 'cluster-badge cluster-badge-occ';
+    if (n.includes('inactif'))    return 'cluster-badge cluster-badge-inactif';
+    return 'cluster-badge';
+}
+
+// Emoji par type de cluster
+function getClusterEmoji(nom) {
+    const n = nom.toLowerCase();
+    if (n.includes('vip'))        return '👑 ';
+    if (n.includes('régulier'))   return '🔄 ';
+    if (n.includes('occasionnel'))return '🛒 ';
+    if (n.includes('inactif'))    return '💤 ';
+    return '🏷️ ';
+}
+
+async function analyser() {
+    const btn = document.getElementById('btn');
+    const err = document.getElementById('error');
+    err.style.display = 'none';
+    btn.disabled    = true;
+    btn.textContent = 'Analyse en cours…';
+
+    const data = {
+        frequency:               parseFloat(document.getElementById('frequency').value),
+        monetarytotal:           parseFloat(document.getElementById('monetarytotal').value),
+        uniqueinvoices:          parseFloat(document.getElementById('uniqueinvoices').value),
+        uniqueproducts:          parseFloat(document.getElementById('uniqueproducts').value),
+        avgdaysbetweenpurchases: parseFloat(document.getElementById('avgdaysbetweenpurchases').value),
+        satisfactionscore:       parseFloat(document.getElementById('satisfactionscore').value),
+        regyear:                 parseFloat(document.getElementById('regyear').value),
+        regmonth:                parseFloat(document.getElementById('regmonth').value),
+    };
+
+    try {
+        const res  = await fetch('/predict', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (json.status !== 'success') throw new Error(json.message);
+
+        const prob = json.churn.probabilite;
+        const c    = getCouleur(prob);
+
+        const emojiMap  = { success: '✅', warning: '⚠️', danger: '🚨' };
+        const titleMap  = { success: 'Client Fidèle', warning: 'Client à Surveiller', danger: 'Risque de Churn' };
+        const statutMap = { success: 'Client fidèle', warning: 'À surveiller', danger: 'À risque' };
+        const niveauMap = { success: 'Risque faible', warning: 'Risque modéré', danger: 'Risque élevé' };
+
+        // hero
+        document.getElementById('hero-block').className   = 'hero hero-' + c;
+        document.getElementById('big-icon').className     = 'big-icon bi-' + c;
+        document.getElementById('hero-emoji').textContent = emojiMap[c];
+        const ht = document.getElementById('hero-title');
+        ht.textContent = titleMap[c];
+        ht.className   = 'hero-title ht-' + c;
+        document.getElementById('hero-sub').textContent   = 'Probabilité de churn : ' + prob + '%';
+
+        // barre
+        const bar = document.getElementById('prob-bar');
+        bar.style.width = prob + '%';
+        bar.className   = 'prob-fill pf-' + c;
+        document.getElementById('prob-pct').textContent   = prob + '%';
+
+        // niveau
+        const pn = document.getElementById('pill-niveau');
+        pn.className = 'pill pill-' + c;
+        document.getElementById('pill-dot').className    = 'pill-dot dot-' + c;
+        document.getElementById('pill-text').textContent = niveauMap[c];
+
+        // statut
+        document.getElementById('tile-statut').textContent = statutMap[c];
+
+        // revenu
+        document.getElementById('tile-revenu-val').textContent =
+            '£ ' + json.revenu.prediction.toLocaleString('fr-FR',
+                { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+        // cluster segment
+        const clusterNom  = json.cluster.nom;
+        const clusterDesc = json.cluster.description;
+        const badge = document.getElementById('cluster-badge');
+        badge.className   = getClusterBadgeClass(clusterNom);
+        badge.textContent = getClusterEmoji(clusterNom) + clusterNom;
+        document.getElementById('cluster-desc').textContent = clusterDesc;
+
+        // conseil
+        document.getElementById('tile-conseil').textContent = json.churn.conseil;
+
+        // affichage
+        document.getElementById('placeholder').classList.add('hidden');
+        document.getElementById('result-card').classList.add('visible');
+
+    } catch(e) {
+        err.textContent   = '⚠ Erreur : ' + e.message;
+        err.style.display = 'block';
+    } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Analyser le client →';
+    }
+}
+</script>
 </body>
 </html>

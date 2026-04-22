@@ -173,7 +173,7 @@ projetML/
 
 ```bash
 # Cloner le repository
-git clone <your-repo-url>
+git clone https://github.com/votre-username/projetML.git
 cd projetML
 
 # Créer et activer l'environnement virtuel
@@ -201,8 +201,8 @@ python src/train_simple_model.py
 ### 3. Lancer l'Interface Web
 
 ```bash
-# Démarrer Flask
-python app/app_simple.py
+# Démarrer Flask (depuis la racine du projet)
+python app/app.py
 ```
 
 **Puis ouvrir:** [http://localhost:5000](http://localhost:5000)
